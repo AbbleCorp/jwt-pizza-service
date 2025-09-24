@@ -27,5 +27,22 @@ function expectValidJwt(potentialJwt) {
 
 
 //TODO add tests for logout
+test('logout', async () => {
+  const res = await request(app)
+    .delete('/api/auth')
+    .set('Authorization', `Bearer ${testUserAuthToken}`);
+  expect(res.status).toBe(200);
+  expect(res.body).toMatchObject({ message: 'logout successful' });
+  // old token should no longer work
+  const failRes = await request(app)
+    .get('/api/user/me')
+    .set('Authorization', `Bearer ${testUserAuthToken}`);
+  expect(failRes.status).toBe(401);
+});
 
-//TODO add tests for error conditions (missing fields, bad password, etc)
+//TODO add tests for missing fields on register
+test('register with missing fields', async () => {
+  const res = await request(app).post('/api/auth').send({ name: null, email: null, password: null });
+  expect(res.status).toBe(400);
+  expect(res.body).toMatchObject({ message: 'name, email, and password are required' });
+});
