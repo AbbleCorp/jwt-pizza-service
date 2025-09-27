@@ -22,7 +22,6 @@ test('GET menu items', async () => {
     const res = await request(app).get('/api/order/menu');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBeGreaterThan(0);
     expect(res.body[0]).toHaveProperty('id');
     expect(res.body[0]).toHaveProperty('description');
     expect(res.body[0]).toHaveProperty('price');
