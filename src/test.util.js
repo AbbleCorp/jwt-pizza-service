@@ -15,4 +15,10 @@ async function createAdminUser() {
   return { ...created, password: 'toomanysecrets' };
 }
 
-module.exports = { randomName, createAdminUser };
+async function addMenuItem(adminAuthToken, newItem) {
+  let menuItem = { title: randomName(), price: 0.99, image: 'image.png', description: 'desc' };
+  const res = await DB.addMenuItem(menuItem);
+  return res;
+}
+
+module.exports = { randomName, createAdminUser, addMenuItem };

@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../service');
-const { createAdminUser, randomName } = require('../test.util');
+const { createAdminUser, randomName, addMenuItem } = require('../test.util');
 
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let testUserAuthToken;
@@ -13,6 +13,8 @@ beforeAll(async () => {
   testUserAuthToken = registerRes.body.token;
   registeredUser = registerRes.body.user;
   expect(testUserAuthToken).toMatch(/^[\w-]*\.[\w-]*\.[\w-]*$/); // quick jwt-ish check
+  //add a menu item to ensure there is at least one
+  const menuItem = addMenuItem();
 });
 
 
