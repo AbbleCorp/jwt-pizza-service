@@ -68,16 +68,8 @@ jobs:
           printf '{"version": "%s" }' "$version" > src/version.json
 
 
-      # Debug step to check NET_ID
-      - name: Debug NET_ID
-        run: |
-          echo "Length of NET_ID is: ${#NET_ID}"
-          echo "NET_ID starts with: ${NET_ID:0:2}"
-        env:
-          NET_ID: ${{ secrets.NET_ID }}
-
       - name: Update coverage
         run: |
           coverage=$(jq '.total.lines.pct' coverage/coverage-summary.json)
           color=$(echo "$coverage < 80" | bc | awk '{if ($1) print "red"; else print "green"}')
-          curl -s -X POST "https://pizza-factory.cs329.click/api/badge/${{ secrets.NET_ID }}/jwtpizzaservicecoverage?label=Coverage&value=$coverage%25&color=$color" -H "authorization: bearer ${{ secrets.FACTORY_API_KEY }}"
+          curl -s -X POST "https://badge.cs329.click/badge/${{ github.repository_owner }}/jwtpizzaservicecoverage?label=Coverage&value=$coverage%25&color=$color" -H "authorization: bearer ${{ secrets.FACTORY_API_KEY }}" -o /dev/null
