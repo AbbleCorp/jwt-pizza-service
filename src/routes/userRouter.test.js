@@ -1,9 +1,12 @@
 const request = require('supertest');
 const app = require('../service');
+const { createAdminUser } = require('../test.util');
+
 
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let testUserAuthToken;
 let registeredUser;
+
 
 beforeAll(async () => {
   // create a fresh test user
@@ -41,23 +44,7 @@ test('GET /api/user/me without token returns 401', async () => {
   expect(res.body).toMatchObject({ message: 'unauthorized' });
 });
 
-const { Role, DB } = require('../database/database.js');
 
-function randomName() {
-  return Math.random().toString(36).substring(2, 12);
-}
-
-//TODO move to a test utility file if needed elsewhere
-
-async function createAdminUser() {
-  let user = { password: 'toomanysecrets', roles: [{ role: Role.Admin }] };
-  user.name = randomName();
-  user.email = user.name + '@admin.com';
-
-  const created = await DB.addUser(user);
-  // return the created user plus the plaintext password so tests can log in
-  return { ...created, password: 'toomanysecrets' };
-}
 
 test('PUT /api/user/:userId updates user', async () => {
   const newName = 'new name';
@@ -95,3 +82,26 @@ test('PUT /api/user/:userId updates user', async () => {
 
 
 //TODO: add test for unauthorized update attempt (non-admin trying to update another user)
+test('non-admin cannot update another user', async () => {
+  const newName = 'new name';
+  const newEmail = 'newemail@test.com';
+  // Create a non-admin user
+  const nonAdminUser = { name: 'non-admin', email: 'email@test.com', password: 'password' };
+  const registerRes = await request(app).post('/api/auth').send(nonAdminUser);
+  expect(registerRes.status).toBe(200);
+  const nonAdminAuthToken = registerRes.body.token;
+  //update beforeAll test user
+  const res = await request(app)
+    .put(`/api/user/${registeredUser.id}`)
+    .set('Authorization', `Bearer ${nonAdminAuthToken}`)
+    .send({ name: newName, email: newEmail });
+
+  expect(res.status).toBe(403);
+  expect(res.body).toMatchObject({ message: 'unauthorized' });
+  // make sure user was not updated
+  const getRes = await request(app)
+    .get('/api/user/me').set('Authorization', `Bearer ${testUserAuthToken}`);
+  expect(getRes.status).toBe(200);
+  expect(getRes.body).toHaveProperty('name', testUser.name);
+  expect(getRes.body).toHaveProperty('email', registeredUser.email);
+});
