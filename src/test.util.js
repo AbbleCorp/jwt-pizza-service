@@ -15,7 +15,7 @@ async function createAdminUser() {
   return { ...created, password: 'toomanysecrets' };
 }
 
-async function addMenuItem(adminAuthToken, newItem) {
+async function addMenuItem() {
   let menuItem = { title: randomName(), price: 0.99, image: 'image.png', description: 'desc' };
   const res = await DB.addMenuItem(menuItem);
   return res;

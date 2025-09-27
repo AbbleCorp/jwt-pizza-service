@@ -14,7 +14,7 @@ beforeAll(async () => {
   registeredUser = registerRes.body.user;
   expect(testUserAuthToken).toMatch(/^[\w-]*\.[\w-]*\.[\w-]*$/); // quick jwt-ish check
   //add a menu item to ensure there is at least one
-  const menuItem = addMenuItem();
+  addMenuItem();
 });
 
 
