@@ -105,3 +105,16 @@ test('non-admin cannot update another user', async () => {
   expect(getRes.body).toHaveProperty('name', testUser.name);
   expect(getRes.body).toHaveProperty('email', registeredUser.email);
 });
+
+
+test('list users unauthorized', async () => {
+  const listUsersRes = await request(app).get('/api/user');
+  expect(listUsersRes.status).toBe(401);
+});
+
+test('list users', async () => {
+  const listUsersRes = await request(app)
+    .get('/api/user')
+    .set('Authorization', 'Bearer ' + testUserAuthToken);
+  expect(listUsersRes.status).toBe(200);
+});
