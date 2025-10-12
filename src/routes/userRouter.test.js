@@ -112,9 +112,41 @@ test('list users unauthorized', async () => {
   expect(listUsersRes.status).toBe(401);
 });
 
-test('list users', async () => {
-  const listUsersRes = await request(app)
+
+
+// in userRouter.test.js
+test('GET /api/user returns paginated users for admin', async () => {
+  const admin = await createAdminUser();
+  const loginRes = await request(app).put('/api/auth').send({ email: admin.email, password: admin.password });
+  expect(loginRes.status).toBe(200);
+  const userAuthToken = loginRes.body.token;
+  
+  const res = await request(app)
+    .get('/api/user?page=1&limit=2')
+    .set('Authorization', `Bearer ${userAuthToken}`);
+
+  expect(res.status).toBe(200);
+  expect(res.body).toHaveProperty('users');
+  expect(Array.isArray(res.body.users)).toBe(true);
+  expect(res.body).toHaveProperty('page', 1);
+  expect(res.body).toHaveProperty('hasMore');
+  
+  // Each user should have expected fields
+  if (res.body.users.length > 0) {
+    expect(res.body.users[0]).toHaveProperty('id');
+    expect(res.body.users[0]).toHaveProperty('name');
+    expect(res.body.users[0]).toHaveProperty('email');
+    expect(res.body.users[0]).toHaveProperty('roles');
+    expect(Array.isArray(res.body.users[0].roles)).toBe(true);
+  }
+});
+
+test('GET /api/user returns 403 for non-admin', async () => {
+  // Use the test user created in beforeAll
+  const res = await request(app)
     .get('/api/user')
-    .set('Authorization', 'Bearer ' + testUserAuthToken);
-  expect(listUsersRes.status).toBe(200);
+    .set('Authorization', `Bearer ${testUserAuthToken}`);
+
+  expect(res.status).toBe(403);
+  expect(res.body).toMatchObject({ message: 'unauthorized' });
 });

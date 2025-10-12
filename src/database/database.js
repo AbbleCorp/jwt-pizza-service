@@ -75,6 +75,52 @@ class DB {
     }
   }
 
+
+  async getUsers(page = 1, limit = 10, nameFilter = '*') {
+  const connection = await this.getConnection();
+  try {
+    const offset = this.getOffset(page, limit);
+    nameFilter = nameFilter.replace(/\*/g, '%');
+    
+    // Get paginated users
+  const users = await this.query(connection,
+  `SELECT id, name, email FROM \`user\`
+   WHERE name LIKE ?
+   LIMIT ${connection.escape(Number(limit) + 1)}
+   OFFSET ${connection.escape(Number(offset))}`,
+  [nameFilter]
+);
+
+
+    // Check if there are more results
+    const hasMore = users.length > limit;
+    if (hasMore) {
+      users.pop(); // Remove the extra item we fetched to check for more
+    }
+
+    // Get roles for each user
+    for (const user of users) {
+      const roleResult = await this.query(
+        connection,
+        `SELECT role, objectId FROM userRole WHERE userId = ?`,
+        [user.id]
+      );
+      user.roles = roleResult.map(r => ({
+        role: r.role,
+        objectId: r.objectId || undefined
+      }));
+    }
+
+    return {
+      users,
+      page,
+      hasMore
+    };
+  } finally {
+    connection.end();
+  }
+}
+
   async updateUser(userId, name, email, password) {
     const connection = await this.getConnection();
     try {

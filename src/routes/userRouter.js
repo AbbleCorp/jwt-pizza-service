@@ -46,7 +46,21 @@ userRouter.get(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
-    res.json({});
+    // Only admins can list all users
+    try {
+    if (!req.user.isRole(Role.Admin)) {
+      return res.status(403).json({ message: 'unauthorized' });
+    }
+
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+    const nameFilter = req.query.name || '*';
+
+    const result = await DB.getUsers(page, limit, nameFilter);
+    res.json(result);
+  } catch (err) {
+    console.error('Error in GET /api/user:', err);
+  }
   })
 );
 
