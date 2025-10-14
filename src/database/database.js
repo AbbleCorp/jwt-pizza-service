@@ -145,6 +145,29 @@ class DB {
     }
   }
 
+  async deleteUser(userId) {
+    const connection = await this.getConnection();
+    try {
+      // First delete from auth table
+      await this.query(connection, 'DELETE FROM auth WHERE userId = ?', [userId]);
+      
+      // Then delete user roles
+      await this.query(connection, 'DELETE FROM userRole WHERE userId = ?', [userId]);
+      
+      // Finally delete the user
+      const result = await this.query(connection, 'DELETE FROM user WHERE id = ?', [userId]);
+      
+      if (result.affectedRows === 0) {
+        throw new StatusCodeError('User not found', 404);
+      }
+    } finally {
+      connection.end();
+    }
+  }
+
+
+
+
   async loginUser(userId, token) {
     token = this.getTokenSignature(token);
     const connection = await this.getConnection();

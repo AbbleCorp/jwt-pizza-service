@@ -6,6 +6,7 @@ const { createAdminUser } = require('../test.util');
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let testUserAuthToken;
 let registeredUser;
+let userId;
 
 
 beforeAll(async () => {
@@ -14,6 +15,7 @@ beforeAll(async () => {
   const registerRes = await request(app).post('/api/auth').send(testUser);
   testUserAuthToken = registerRes.body.token;
   registeredUser = registerRes.body.user;
+  userId = registeredUser.id;
   expect(testUserAuthToken).toMatch(/^[\w-]*\.[\w-]*\.[\w-]*$/); // quick jwt-ish check
 });
 
@@ -149,4 +151,24 @@ test('GET /api/user returns 403 for non-admin', async () => {
 
   expect(res.status).toBe(403);
   expect(res.body).toMatchObject({ message: 'unauthorized' });
+});
+
+
+test('DELETE /api/user/:userId deletes a user (admin only)', async () => {
+  // Create admin and obtain token by logging in through the auth endpoint
+  const admin = await createAdminUser();
+  const loginRes = await request(app).put('/api/auth').send({ email: admin.email, password: admin.password });
+  expect(loginRes.status).toBe(200);
+  const userAuthToken = loginRes.body.token;
+
+  // Delete the user as admin
+  const deleteRes = await request(app)
+    .delete(`/api/user/${userId}`)
+    .set('Authorization', `Bearer ${userAuthToken}`);
+
+  expect(deleteRes.status).toBe(204);
+
+  // Verify the user no longer exists by attempting to log in
+  const loginDeletedRes = await request(app).put('/api/auth').send({ email: testUser.email, password: testUser.password });
+  expect(loginDeletedRes.status).not.toBe(200);
 });
