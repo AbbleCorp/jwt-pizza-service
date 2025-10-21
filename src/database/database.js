@@ -60,6 +60,16 @@ class DB {
     try {
       const userResult = await this.query(connection, `SELECT * FROM user WHERE email=?`, [email]);
       const user = userResult[0];
+      
+      // Add more detailed debugging
+      // console.error("Debug password check:");
+      // console.error(await bcrypt.hash("admin", 10));
+      // console.error("1. Password received:", password);
+      // console.error("2. Password length:", password ? password.length : 0);
+      // console.error("3. Password buffer:", password ? Buffer.from(password).toString('hex') : null);
+      // console.error("4. Stored hash:", user ? user.password : null);
+      // console.error("5. Hash starts with $2b$?: ", user ? user.password.startsWith('$2b$') : false);
+      
       if (!user || (password && !(await bcrypt.compare(password, user.password)))) {
         throw new StatusCodeError('unknown user', 404);
       }
