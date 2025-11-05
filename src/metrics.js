@@ -12,6 +12,16 @@ let revenueGenerated = 0;
 let creationLatencyMs = 0;
 let creationFailures = 0;
 
+let totalLatency = 0;
+let latencySamples = 0;
+
+function recordCreationLatency(latencyMs) {
+  totalLatency += latencyMs;
+  latencySamples++;
+  creationLatencyMs = totalLatency / latencySamples;
+}
+
+
 function incrementSuccessfulAuthentications() {
   successfulAuthentications++;
 }
@@ -138,4 +148,4 @@ function sendMetricToGrafana(metrics) {
     });
 }
 
-module.exports = { requestTracker, incrementSuccessfulAuthentications, incrementFailedAuthentications, incrementPizzasSold, addRevenue, incrementCreationFailures };
+module.exports = { requestTracker, incrementSuccessfulAuthentications, incrementFailedAuthentications, incrementPizzasSold, addRevenue, incrementCreationFailures, recordCreationLatency };
