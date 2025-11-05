@@ -11,6 +11,7 @@ let pizzasSold = 0;
 let revenueGenerated = 0;
 let creationLatencyMs = 0;
 let creationFailures = 0;
+let activeUsers = new Set();
 
 let totalLatency = 0;
 let latencySamples = 0;
@@ -19,6 +20,14 @@ function recordCreationLatency(latencyMs) {
   totalLatency += latencyMs;
   latencySamples++;
   creationLatencyMs = totalLatency / latencySamples;
+}
+
+function userBecameActive(userId) {
+  activeUsers.add(userId);
+}
+
+function userBecameInactive(userId) {
+  activeUsers.delete(userId);
 }
 
 
@@ -60,15 +69,35 @@ function getMemoryUsagePercentage() {
 function requestTracker(req, res, next) {
   const endpoint = `[${req.method}] ${req.path}`;
   requests[endpoint] = (requests[endpoint] || 0) + 1;
+
+  // Track total requests by HTTP method
+  requests[req.method] = (requests[req.method] || 0) + 1;
+
   next();
 }
+
 
 // This will periodically send metrics to Grafana
 setInterval(() => {
   const metrics = [];
-  Object.keys(requests).forEach((endpoint) => {
-    metrics.push(createMetric('requests', requests[endpoint], '1', 'sum', 'asInt', { endpoint }));
+
+  // Aggregate counts by HTTP method
+  const methodCounts = { GET: 0, POST: 0, PUT: 0, DELETE: 0, PATCH: 0 };
+
+  Object.entries(requests).forEach(([key, count]) => {
+    const match = key.match(/\[(\w+)\]/); // Extract method from key, e.g., "[GET]" → "GET"
+    if (match && methodCounts[match[1]] !== undefined) {
+      methodCounts[match[1]] += count;
+    }
   });
+
+  // Create metrics per method
+  Object.entries(methodCounts).forEach(([method, count]) => {
+    metrics.push(
+      createMetric('httpRequestsByMethod', count, '1', 'sum', 'asInt', { method })
+    );
+  });
+
 
   cpuPercentage = getCpuUsagePercentage();
   metrics.push(createMetric('cpuPercentage', cpuPercentage, 'percent', 'sum', 'asDouble', {}));
@@ -84,6 +113,8 @@ setInterval(() => {
 
   metrics.push(createMetric('creationLatencyMs', creationLatencyMs, 'ms', 'sum', 'asDouble', {}));
   metrics.push(createMetric('creationFailures', creationFailures, '1', 'sum', 'asInt', {}));
+  metrics.push(createMetric('activeUsers', activeUsers.size, '1', 'sum', 'asInt', {}));
+
 
   sendMetricToGrafana(metrics);
 }, 10000);
@@ -148,4 +179,4 @@ function sendMetricToGrafana(metrics) {
     });
 }
 
-module.exports = { requestTracker, incrementSuccessfulAuthentications, incrementFailedAuthentications, incrementPizzasSold, addRevenue, incrementCreationFailures, recordCreationLatency };
+module.exports = { requestTracker, incrementSuccessfulAuthentications, incrementFailedAuthentications, incrementPizzasSold, addRevenue, incrementCreationFailures, recordCreationLatency, userBecameActive, userBecameInactive };
