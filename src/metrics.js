@@ -1,7 +1,8 @@
 const config = require('./config');
+const os = require('os');
 
 // Metrics stored in memory
-let requests = {};
+const requests = {};
 let cpuPercentage = 0;
 let memoryPercentage = 0;
 let successfulAuthentications = 0;
@@ -11,9 +12,27 @@ let revenueGenerated = 0;
 let creationLatencyMs = 0;
 let creationFailures = 0;
 
+function incrementSuccessfulAuthentications() {
+  successfulAuthentications++;
+}
 
+function incrementFailedAuthentications() {
+  failedAuthentications++;
+}
 
-const os = require('os');
+function incrementPizzasSold(count) {
+  pizzasSold += count;
+}
+
+function addRevenue(amount) {
+  revenueGenerated += amount;
+}
+
+//TODO: implement latency tracking properly
+
+function incrementCreationFailures() {
+  creationFailures++;
+}
 
 function getCpuUsagePercentage() {
   const cpuUsage = os.loadavg()[0] / os.cpus().length;
@@ -60,7 +79,7 @@ setInterval(() => {
 }, 10000);
 
 function createMetric(metricName, metricValue, metricUnit, metricType, valueType, attributes) {
-  attributes = { ...attributes, source: config.source };
+  attributes = { ...attributes, source: config.metrics.source };
 
   const metric = {
     name: metricName,
@@ -104,10 +123,10 @@ function sendMetricToGrafana(metrics) {
     ],
   };
 
-  fetch(`${config.url}`, {
+  fetch(`${config.metrics.url}`, {
     method: 'POST',
     body: JSON.stringify(body),
-    headers: { Authorization: `Bearer ${config.apiKey}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${config.metrics.apiKey}`, 'Content-Type': 'application/json' },
   })
     .then((response) => {
       if (!response.ok) {
@@ -119,4 +138,4 @@ function sendMetricToGrafana(metrics) {
     });
 }
 
-module.exports = { requestTracker };
+module.exports = { requestTracker, incrementSuccessfulAuthentications, incrementFailedAuthentications, incrementPizzasSold, addRevenue, incrementCreationFailures };

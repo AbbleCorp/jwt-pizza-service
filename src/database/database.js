@@ -71,7 +71,7 @@ class DB {
       // console.error("5. Hash starts with $2b$?: ", user ? user.password.startsWith('$2b$') : false);
       
       if (!user || (password && !(await bcrypt.compare(password, user.password)))) {
-        throw new StatusCodeError('unknown user', 404);
+        return null;
       }
 
       const roleResult = await this.query(connection, `SELECT * FROM userRole WHERE userId=?`, [user.id]);
