@@ -92,7 +92,7 @@ authRouter.put(
 
 // logout
 authRouter.delete(
-  '/',
+  '/', metrics.requestTracker,
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     await clearAuth(req);

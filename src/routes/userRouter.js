@@ -2,6 +2,7 @@ const express = require('express');
 const { asyncHandler } = require('../endpointHelper.js');
 const { DB, Role } = require('../database/database.js');
 const { authRouter, setAuth } = require('./authRouter.js');
+const metrics = require('../metrics.js');
 
 const userRouter = express.Router();
 
@@ -51,7 +52,7 @@ userRouter.docs = [
 
 // listUsers
 userRouter.get(
-  '/',
+  '/', metrics.requestTracker,
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     // Only admins can list all users
@@ -74,7 +75,7 @@ userRouter.get(
 
 // getUser
 userRouter.get(
-  '/me',
+  '/me', metrics.requestTracker,
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     res.json(req.user);
@@ -83,7 +84,7 @@ userRouter.get(
 
 // updateUser
 userRouter.put(
-  '/:userId',
+  '/:userId', metrics.requestTracker,
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
@@ -101,7 +102,7 @@ userRouter.put(
 
 // deleteUser
 userRouter.delete(
-  '/:userId',
+  '/:userId', metrics.requestTracker,
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     const userId = Number(req.params.userId);

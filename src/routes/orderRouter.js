@@ -5,6 +5,7 @@ const { authRouter } = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 const metrics = require('../metrics.js');
 
+
 const orderRouter = express.Router();
 
 orderRouter.docs = [
@@ -43,17 +44,19 @@ orderRouter.docs = [
 
 // getMenu
 orderRouter.get(
-  '/menu',
+  '/menu', metrics.requestTracker,
   asyncHandler(async (req, res) => {
+    metrics.incrementgetRequests();
     res.send(await DB.getMenu());
   })
 );
 
 // addMenuItem
 orderRouter.put(
-  '/menu',
+  '/menu', metrics.requestTracker,
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+    metrics.incrementputRequests();
     if (!req.user.isRole(Role.Admin)) {
       throw new StatusCodeError('unable to add menu item', 403);
     }
@@ -66,9 +69,10 @@ orderRouter.put(
 
 // getOrders
 orderRouter.get(
-  '/',
+  '/', metrics.requestTracker,
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+    metrics.incrementgetRequests();
     res.json(await DB.getOrders(req.user, req.query.page));
   })
 );
@@ -76,10 +80,11 @@ orderRouter.get(
 // createOrder
 
 orderRouter.post(
-  '/',
+  '/', metrics.requestTracker,
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     const start = performance.now();
+    metrics.incrementpostRequests();
 
     try {
       const orderReq = req.body;

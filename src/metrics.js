@@ -2,7 +2,11 @@ const config = require('./config');
 const os = require('os');
 
 // Metrics stored in memory
-const requests = {};
+let totalRequests = 0;
+let putRequests = 0;
+let getRequests = 0;
+let postRequests = 0;
+let deleteRequests = 0;
 let cpuPercentage = 0;
 let memoryPercentage = 0;
 let successfulAuthentications = 0;
@@ -54,9 +58,10 @@ function incrementCreationFailures() {
 }
 
 function getCpuUsagePercentage() {
-  const cpuUsage = os.loadavg()[0] / os.cpus().length;
-  return cpuUsage.toFixed(2) * 100;
+  const cpuUsage = (os.loadavg()[0] / os.cpus().length) * 100;
+  return Number(cpuUsage.toFixed(2));
 }
+
 
 function getMemoryUsagePercentage() {
   const totalMemory = os.totalmem();
@@ -66,37 +71,69 @@ function getMemoryUsagePercentage() {
   return memoryUsage.toFixed(2);
 }
 
-function requestTracker(req, res, next) {
-  const endpoint = `[${req.method}] ${req.path}`;
-  requests[endpoint] = (requests[endpoint] || 0) + 1;
+function incrementgetRequests() {
+  getRequests++;
+  totalRequests++;
+}
 
-  // Track total requests by HTTP method
-  requests[req.method] = (requests[req.method] || 0) + 1;
+function incrementpostRequests() {
+  postRequests++;
+  totalRequests++;
+}
+
+function incrementdeleteRequests() {
+  deleteRequests++;
+  totalRequests++;
+}
+
+function incrementputRequests() {
+  putRequests++;
+  totalRequests++;
+}
+
+function requestTracker(req, res, next) {
+  const method = req.method.toLowerCase();
+
+  switch (method) {
+    case 'get':
+      incrementgetRequests();
+      break;
+    case 'post':
+      incrementpostRequests();
+      break;
+    case 'put':
+      incrementputRequests();
+      break;
+    case 'delete':
+      incrementdeleteRequests();
+      break;
+    default:
+      totalRequests++;
+  }
 
   next();
+}
+
+
+
+
+function clearRequests() {
+  totalRequests = 0;
+  getRequests = 0;
+  postRequests = 0;
+  putRequests = 0;
+  deleteRequests = 0;
 }
 
 
 // This will periodically send metrics to Grafana
 setInterval(() => {
   const metrics = [];
-
-  // Aggregate counts by HTTP method
-  const methodCounts = { GET: 0, POST: 0, PUT: 0, DELETE: 0, PATCH: 0 };
-
-  Object.entries(requests).forEach(([key, count]) => {
-    const match = key.match(/\[(\w+)\]/); // Extract method from key, e.g., "[GET]" → "GET"
-    if (match && methodCounts[match[1]] !== undefined) {
-      methodCounts[match[1]] += count;
-    }
-  });
-
-  // Create metrics per method
-  Object.entries(methodCounts).forEach(([method, count]) => {
-    metrics.push(
-      createMetric('httpRequestsByMethod', count, '1', 'sum', 'asInt', { method })
-    );
-  });
+  metrics.push(createMetric('totalRequests', totalRequests, '1', 'sum', 'asInt', {}));
+  metrics.push(createMetric('getRequests', getRequests, '1', 'sum', 'asInt', {}));
+  metrics.push(createMetric('postRequests', postRequests, '1', 'sum', 'asInt', {}));
+  metrics.push(createMetric('putRequests', putRequests, '1', 'sum', 'asInt', {}));
+  metrics.push(createMetric('deleteRequests', deleteRequests, '1', 'sum', 'asInt', {}));
 
 
   cpuPercentage = getCpuUsagePercentage();
@@ -117,6 +154,7 @@ setInterval(() => {
 
 
   sendMetricToGrafana(metrics);
+  //clearRequests();
 }, 10000);
 
 function createMetric(metricName, metricValue, metricUnit, metricType, valueType, attributes) {
@@ -179,4 +217,6 @@ function sendMetricToGrafana(metrics) {
     });
 }
 
-module.exports = { requestTracker, incrementSuccessfulAuthentications, incrementFailedAuthentications, incrementPizzasSold, addRevenue, incrementCreationFailures, recordCreationLatency, userBecameActive, userBecameInactive };
+module.exports = { requestTracker, incrementSuccessfulAuthentications, incrementFailedAuthentications, 
+  incrementPizzasSold, addRevenue, incrementCreationFailures, recordCreationLatency, userBecameActive,
+   userBecameInactive, incrementgetRequests, incrementpostRequests, incrementputRequests, incrementdeleteRequests };
