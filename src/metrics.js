@@ -117,13 +117,6 @@ function requestTracker(req, res, next) {
 
 
 
-function clearRequests() {
-  totalRequests = 0;
-  getRequests = 0;
-  postRequests = 0;
-  putRequests = 0;
-  deleteRequests = 0;
-}
 
 
 // This will periodically send metrics to Grafana
