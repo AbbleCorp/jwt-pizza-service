@@ -16,14 +16,16 @@ let revenueGenerated = 0;
 let creationLatencyMs = 0;
 let creationFailures = 0;
 let activeUsers = new Set();
-
-let totalLatency = 0;
+let totalLatencyMs = 0;
 let latencySamples = 0;
 
+let creationTotalLatency = 0;
+let creationLatencySamples = 0;
+
 function recordCreationLatency(latencyMs) {
-  totalLatency += latencyMs;
-  latencySamples++;
-  creationLatencyMs = totalLatency / latencySamples;
+  creationTotalLatency += latencyMs;
+  creationLatencySamples++;
+  creationLatencyMs = creationTotalLatency / creationLatencySamples;
 }
 
 function userBecameActive(userId) {
@@ -92,6 +94,8 @@ function incrementputRequests() {
 }
 
 function requestTracker(req, res, next) {
+  const start = Date.now();
+
   const method = req.method.toLowerCase();
 
   switch (method) {
@@ -110,6 +114,12 @@ function requestTracker(req, res, next) {
     default:
       totalRequests++;
   }
+
+    res.on('finish', () => {
+    const duration = Date.now() - start;
+    totalLatencyMs += duration;
+    latencySamples++;
+  });
 
   next();
 }
@@ -144,6 +154,12 @@ setInterval(() => {
   metrics.push(createMetric('creationLatencyMs', creationLatencyMs, 'ms', 'sum', 'asDouble', {}));
   metrics.push(createMetric('creationFailures', creationFailures, '1', 'sum', 'asInt', {}));
   metrics.push(createMetric('activeUsers', activeUsers.size, '1', 'sum', 'asInt', {}));
+  const avgLatency = latencySamples > 0 ? totalLatencyMs / latencySamples : 0;
+  metrics.push(createMetric('avgLatencyMs', avgLatency, 'ms', 'sum', 'asDouble', {}));
+  totalLatencyMs = 0;
+  latencySamples = 0;
+
+
 
 
   sendMetricToGrafana(metrics);
