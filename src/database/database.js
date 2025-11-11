@@ -384,6 +384,8 @@ async query(connection, sql, params) {
       require('../logger').log('info', 'db_query', {
         sql,
         params,
+        queryStatus: 'success',
+        affectedRows: results.affectedRows,
         durationMs: duration,
       });
     }
@@ -394,7 +396,11 @@ async query(connection, sql, params) {
     require('../logger').log('error', 'db_query_error', {
       sql,
       params,
-      error: err.message,
+      queryStatus: 'error',
+      errorMessage: err.message,
+      errorCode: err.code,       // MySQL error code like ER_DUP_ENTRY
+      sqlState: err.sqlState,
+      durationMs: duration, 
     });
 
     throw err;
