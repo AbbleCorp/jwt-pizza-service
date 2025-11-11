@@ -372,10 +372,35 @@ class DB {
     return '';
   }
 
-  async query(connection, sql, params) {
+async query(connection, sql, params) {
+  const start = Date.now();
+
+  try {
     const [results] = await connection.execute(sql, params);
+
+    // Logging only WHEN useful (slow queries)
+    const duration = Date.now() - start;
+    if (duration > 1) { //here can adjust to only log queries that take longer than X ms
+      require('../logger').log('info', 'db_query', {
+        sql,
+        params,
+        durationMs: duration,
+      });
+    }
+
     return results;
+  } catch (err) {
+    // Always log errors
+    require('../logger').log('error', 'db_query_error', {
+      sql,
+      params,
+      error: err.message,
+    });
+
+    throw err;
   }
+}
+
 
   async getID(connection, key, value, table) {
     const [rows] = await connection.execute(`SELECT id FROM ${table} WHERE ${key}=?`, [value]);

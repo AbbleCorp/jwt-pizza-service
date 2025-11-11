@@ -26,13 +26,21 @@ class Logger {
     next();
   };
 
-  log(level, type, logData) {
-    const labels = { component: config.logging.source, level: level, type: type };
-    const values = [this.nowString(), this.sanitize(logData)];
-    const logEvent = { streams: [{ stream: labels, values: [values] }] };
+log(level, type, logData) {
+  const labels = {
+    component: config.logging.source,
+    level,
+    type,
+    // For SQL: add a short summary
+    sqlOp: logData.sql ? logData.sql.split(' ')[0] : undefined
+  };
 
-    this.sendLogToGrafana(logEvent);
-  }
+  const values = [this.nowString(), this.sanitize(logData)];
+  const logEvent = { streams: [{ stream: labels, values: [values] }] };
+
+  this.sendLogToGrafana(logEvent);
+}
+
 
   statusToLogLevel(statusCode) {
     if (statusCode >= 500) return 'error';
@@ -44,11 +52,18 @@ class Logger {
     return (Math.floor(Date.now()) * 1000000).toString();
   }
 
-  sanitize(data) {
-    if (!data) return data;
-    const str = typeof data === 'string' ? data : JSON.stringify(data);
-    return str.replace(/"password":\s*"[^"]*"/g, '"password": "*****"');
-  }
+sanitize(data) {
+  if (!data) return data;
+
+  let str = typeof data === 'string' ? data : JSON.stringify(data);
+
+  // Mask nested password fields
+  str = str.replace(/"password":\s*"[^"]*"/g, '"password": "*****"');
+  str = str.replace(/password=[^&\s]*/g, 'password=*****');
+
+  return str;
+}
+
 
 sendLogToGrafana(event) {
   const body = JSON.stringify(event);
