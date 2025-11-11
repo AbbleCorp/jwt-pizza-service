@@ -374,12 +374,14 @@ class DB {
 
 async query(connection, sql, params) {
   const start = Date.now();
+  let duration = 0;
 
   try {
     const [results] = await connection.execute(sql, params);
 
+
     // Logging only WHEN useful (slow queries)
-    const duration = Date.now() - start;
+    duration = Date.now() - start;
     if (duration > 1) { //here can adjust to only log queries that take longer than X ms
       require('../logger').log('info', 'db_query', {
         sql,
@@ -393,6 +395,7 @@ async query(connection, sql, params) {
     return results;
   } catch (err) {
     // Always log errors
+    duration = Date.now() - start;
     require('../logger').log('error', 'db_query_error', {
       sql,
       params,
