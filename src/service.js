@@ -73,19 +73,16 @@ app.use('*', (req, res) => {
 });
 
 // Default error handler for all exceptions and errors.
-app.use((err, req, res) => {
-  const message = err instanceof Error ? err.message : String(err);
-  const stack = err instanceof Error ? err.stack : undefined;
-
-  logger.log({
+app.use((err, req, res, next) => {
+  res.status(err.statusCode ?? 500).json({ message: err.message, stack: err.stack });
+    logger.log({
     level: 'error',
-    message,
-    stack,
+    message: err.message,
+    stack: err.stack,
     method: req.method,
     path: req.originalUrl
   });
-
-  res.status(err.statusCode ?? 500).json({ message });
+  next();
 });
 
 
