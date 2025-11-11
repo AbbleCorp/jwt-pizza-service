@@ -5,8 +5,11 @@ const franchiseRouter = require('./routes/franchiseRouter.js');
 const userRouter = require('./routes/userRouter.js');
 const version = require('./version.json');
 const config = require('./config.js');
+const logger = require('./logger.js');
 
 const app = express();
+app.use(logger.httpLogger);
+
 app.use(express.json());
 app.use(setAuthUser);
 app.use((req, res, next) => {
