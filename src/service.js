@@ -1,3 +1,24 @@
+const logger = require('./logger.js');
+
+// ---- PROCESS-LEVEL ERROR HANDLERS ----
+const exiting = process.env.NODE_ENV === 'production';
+
+process.on('uncaughtException', (err) => {
+  logger.log({ level: 'fatal', message: err.message, stack: err.stack });
+  if (exiting) process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.log({
+    level: 'fatal',
+    message: reason instanceof Error ? reason.message : String(reason),
+    stack: reason instanceof Error ? reason.stack : undefined,
+  });
+  if (exiting) process.exit(1);
+});
+
+
+
 const express = require('express');
 const { authRouter, setAuthUser } = require('./routes/authRouter.js');
 const orderRouter = require('./routes/orderRouter.js');
@@ -5,7 +26,10 @@ const franchiseRouter = require('./routes/franchiseRouter.js');
 const userRouter = require('./routes/userRouter.js');
 const version = require('./version.json');
 const config = require('./config.js');
-const logger = require('./logger.js');
+
+
+
+
 
 const app = express();
 app.use(logger.httpLogger);
@@ -50,8 +74,20 @@ app.use('*', (req, res) => {
 
 // Default error handler for all exceptions and errors.
 app.use((err, req, res, next) => {
-  res.status(err.statusCode ?? 500).json({ message: err.message, stack: err.stack });
-  next();
+  const message = err instanceof Error ? err.message : String(err);
+  const stack = err instanceof Error ? err.stack : undefined;
+
+  logger.log({
+    level: 'error',
+    message,
+    stack,
+    method: req.method,
+    path: req.originalUrl
+  });
+
+  res.status(err.statusCode ?? 500).json({ message });
 });
+
+
 
 module.exports = app;
